@@ -14,8 +14,7 @@ import acquire
 # In[9]:
 
 
-zillow= acquire.get_zillow_data()
-zillow=zillow.drop(columns='Unnamed: 0')
+zillow= pd.read_csv('zillow.csv')
 
 
 # In[10]:
@@ -107,9 +106,34 @@ def remove_non_single_unit_props (zillow):
 # In[24]:
 
 
-single_unit_df= remove_non_single_unit_props(zillow)
+df= remove_non_single_unit_props(zillow)
 
-
+def clean_zillow(df):
+    df = df.drop(columns=['Unnamed: 0', 'id.1']) #removes unnamed and duplicate column
+    df['yearbuilt'].fillna(df['yearbuilt'].mode()[0], inplace=True)
+    df['fips'].fillna(df['fips'].mode()[0], inplace=True)
+    df["fips"] = df["fips"].astype(int) 
+    df["assessmentyear"]= df["assessmentyear"].astype(int)
+    df["yearbuilt"]= df["yearbuilt"].astype(int)
+    df['regionidzip'].fillna(df['regionidzip'].mode()[0], inplace=True)
+    df['regionidzip']= df['regionidzip'].astype(int)
+    df['regionidcity'].fillna(df['regionidcity'].mode()[0], inplace=True)
+    df['regionidcity']= df['regionidcity'].astype(int)
+    df['regionidcounty'].fillna(df['regionidcounty'].mode()[0], inplace=True)
+    df['regionidcounty']= df['regionidcounty'].astype(int)
+    # make new column for county names
+    county_list = []
+    for row in df['fips']:
+        if row == 6037.0:    
+            county_list.append('los_angeles_county')
+        elif row == 6059.0:   
+            county_list.append('orange_county')
+        elif row == 6111.0:  
+            county_list.append('ventura_county')
+        else:           
+            county_list.append('no_county')
+    df['county']= county_list
+    return df
 # Create a function that will drop rows or columns based on the percent of values that are missing: handle_missing_values(df, prop_required_column, prop_required_row).
 # 
 # The input:
@@ -148,7 +172,7 @@ def prep_zillow (df, cols_to_remove=[], prop_required_column=.5, prop_required_r
         df.dropna(axis=0, thresh=threshold, inplace=True)
         return df
     df = remove_columns(df, cols_to_remove)  # Removes Specified Columns
-    df = handle_missing_values(df, prop_required_column, prop_required_row) # Removes Specified Rows
+    df = handle_missing_values(df, prop_required_column, prop_required_row)# Removes Specified Rows
     #df.dropna(inplace=True) # Drops all Null Values From Dataframe
     return df
 
@@ -156,14 +180,62 @@ def prep_zillow (df, cols_to_remove=[], prop_required_column=.5, prop_required_r
 # In[25]:
 
 
-prep_zillow(single_unit_df,
+prep_zillow(df,
     cols_to_remove=[],
     prop_required_column=.6,
     prop_required_row=.75 )    
 
 
 # In[ ]:
+def split_zillow(df):
+    # split dataset
+    train_validate, test = train_test_split(df, test_size = .2, random_state = 123)
+    train, validate = train_test_split(train_validate, test_size = .3, random_state = 123)
+    return train, validate, test    
+# In[ ]:
+def wrangle_zillow(df):
 
+    clean_zillow(df)
+    prep_zillow(df)
+    train, validate, test = split_zillow(df)
+    # Categorical/Discrete columns to use mode to replace nulls
+
+    cols = [
+        "buildingqualitytypeid",
+        "regionidcity",
+        "regionidzip",
+        "yearbuilt",
+        "regionidcity",
+        "censustractandblock"
+    ]
+
+    for col in cols:
+        mode = int(train[col].mode())
+        train[col].fillna(value=mode, inplace=True)
+        validate[col].fillna(value=mode, inplace=True)
+        test[col].fillna(value=mode, inplace=True)
+
+    # Continuous valued columns to use median to replace nulls
+
+    cols = [
+        "structuretaxvaluedollarcnt",
+        "taxamount",
+        "taxvaluedollarcnt",
+        "landtaxvaluedollarcnt",
+        "structuretaxvaluedollarcnt",
+        "finishedsquarefeet12",
+        "calculatedfinishedsquarefeet",
+        "fullbathcnt",
+        "lotsizesquarefeet"
+    ]
+
+
+    for col in cols:
+        median = train[col].median()
+        train[col].fillna(median, inplace=True)
+        validate[col].fillna(median, inplace=True)
+        test[col].fillna(median, inplace=True)
+    return train, validate, test
 
 
 
