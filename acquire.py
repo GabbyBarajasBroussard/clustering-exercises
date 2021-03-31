@@ -24,7 +24,7 @@ def get_connection(db, user=env.user, host=env.host, password=env.password):
 def get_zillow_data():
     '''This function will connect to the Codeup Student Database. It will then cache a local copy to the computer to use for later
         in the form of a CSV file. If you want to reproduce the results, you will need your own env.py file and database credentials.'''
-    filename = "zillow.csv"
+    filename = "zillow_db.csv"
     if os.path.isfile(filename):
         return pd.read_csv(filename)
     else:
@@ -40,7 +40,6 @@ SELECT prop.*,
        landuse.propertylandusedesc, 
        story.storydesc, 
        construct.typeconstructiondesc 
-
 FROM   properties_2017 prop  
        INNER JOIN (SELECT parcelid,
                           logerror,
@@ -59,7 +58,7 @@ WHERE  prop.latitude IS NOT NULL
        AND prop.longitude IS NOT NULL;
             ''' , get_connection('zillow'))
         # Write that dataframe to disk for later. Called "caching" the data for later.
-        df.to_csv(filename)
+        df.to_csv(filename, index_col=0)
         # Return the dataframe to the calling code
         return df
 
@@ -79,7 +78,30 @@ def get_mall_data():
 SELECT * FROM customers
             ''' , get_connection('mall_customers'))
         # Write that dataframe to disk for later. Called "caching" the data for later.
-        df.to_csv(filename)
+        df.to_csv(filename, index_col=0)
         # Return the dataframe to the calling code
         return df
 
+def get_iris_data():
+    '''This function will connect to the Codeup Student Database. It will then cache a local copy to the computer to use for later
+        in the form of a CSV file. If you want to reproduce the results, you will need your own env.py file and database credentials.'''
+    filename = "iris.csv"
+    if os.path.isfile(filename):
+        return pd.read_csv(filename)
+    else:
+        # read the SQL query into a dataframe
+        df = pd.read_sql('''
+ SELECT species_id,
+                species_name,
+                sepal_length,
+                sepal_width,
+                petal_length,
+                petal_width
+                FROM measurements
+                JOIN species
+                USING(species_id)
+            ''' , get_connection('iris_db'))
+        # Write that dataframe to disk for later. Called "caching" the data for later.
+        df.to_csv(filename, index_col=0)
+        # Return the dataframe to the calling code
+        return df
