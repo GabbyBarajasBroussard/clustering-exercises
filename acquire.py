@@ -58,7 +58,7 @@ WHERE  prop.latitude IS NOT NULL
        AND prop.longitude IS NOT NULL;
             ''' , get_connection('zillow'))
         # Write that dataframe to disk for later. Called "caching" the data for later.
-        df.to_csv(filename, index_col=0)
+        df.to_csv(filename)
         # Return the dataframe to the calling code
         return df
 
@@ -78,7 +78,7 @@ def get_mall_data():
 SELECT * FROM customers
             ''' , get_connection('mall_customers'))
         # Write that dataframe to disk for later. Called "caching" the data for later.
-        df.to_csv(filename, index_col=0)
+        df.to_csv(filename)
         # Return the dataframe to the calling code
         return df
 
@@ -102,6 +102,6 @@ def get_iris_data():
                 USING(species_id)
             ''' , get_connection('iris_db'))
         # Write that dataframe to disk for later. Called "caching" the data for later.
-        df.to_csv(filename, index_col=0)
+        df.to_csv(filename)
         # Return the dataframe to the calling code
         return df
